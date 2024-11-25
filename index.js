@@ -32,16 +32,21 @@ app.get('/', (req, res) => {
 });
 
 io.on('connection', async (socket) => {
-  socket.on('chat message', async (msg) => {
+  socket.on('chat message', async (msg, clientOffset, callback) => {
     let result;
     try {
-      result = await db.run('INSERT INTO messages (content) VALUES (?)', msg);
+      result = await db.run('INSERT INTO messages (content, client_offset) VALUES (?, ?)', msg, clientOffset);
     } catch (e) {
-      // TODO: handle the failure
+      if (e.errno === 19) {
+        callback();
+      } else {
+
+      }
       return;
     }
 
     io.emit('chat message', msg, result.lastID);
+    callback();
   });
 
   if (!socket.recovered) {
